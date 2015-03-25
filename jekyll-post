@@ -91,13 +91,14 @@ def checkIfInPosts():
         sys.exit()
 
 def tagString(tags):
-    taglist = tags.split(' ')
-    tags = ''
-    for tag in taglist:
-        tags = '{} -{}'.format(tags, tag)
-    print("Tags are {}".format(tags))
+    if tags == '':
+        print("No tags.")
+    else:
+        taglist = tags.split(' ')
+        for tag in taglist:
+            tags = '{} -{}'.format(tags, tag)
+        print("Tags are {}".format(tags))
     return tags
-    
 
 def writeYAML(filename, title, datetimeYAML, tags):
     try:
@@ -124,7 +125,7 @@ def checkFile(filename):
         sys.exit(1)
 
 def not_in_posts():
-    cwdContents = listdir("path")
+    cwdContents = listdir(".")
     return "_posts" in cwdContents
 
 def parseArguments():
