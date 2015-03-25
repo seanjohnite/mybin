@@ -59,7 +59,7 @@ def main():
         date, time = todaysDateTime()
         datetimeYAML = "{} {} {}".format(date, time, TIME_ZONE) 
 
-    filename = date + dash_title + '.' + DEFAULT_EXT
+    filename = "{}{}.{}".format(date, dash_title, DEFAULT_EXT)
 
     tags = tagString(args.tags)
 
@@ -148,6 +148,7 @@ def dashTitle(title):
             dash_title += '-'
         elif char.isalnum():
             dash_title += char
+    return dash_title
 
 def todaysDateTime():
     # use today's date
