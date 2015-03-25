@@ -1,0 +1,180 @@
+#!/usr/bin/python
+
+"""
+jekyll-post - this is a simple script that will create and initialize a new
+Jekyll post file. The default is a markdown file (.markdown) and the yaml options
+listed below will be part of the initialization.
+
+jekyll-post [-w] [-d date] [title]
+
+title   the title of the post wrapped in quotes, e.g. "post title here"
+-D      the directory (relative or absolute) that the file should be written to.
+-d      the default date is today's date or this option can be used to specify
+        a date. The date must be specified in the format YYYY-MM-DD.
+-n      the name for the post file instead of using the automatically generated one.
+-t      the tags that should be added to the yaml portion of the file separated
+        by spaces and the whole thing wrapped in quotes.
+-w      this optional flag will signal the file to be opened for writing in vi.
+
+yaml options
+---
+layout: post
+title: [title]
+summary:
+status: draft
+hn-discussion:
+tags:
+- tag1
+- tag2
+- tag3
+---
+Adapted from jbranchaud
+(https://github.com/jbranchaud/mybin/blob/master/jekyll-post)
+"""
+
+# Import Statements
+from argparse import ArgumentParser
+import datetime
+import subprocess
+from os import path, listdir, getcwd
+import sys
+
+DEFAULT_EXT = 'markdown'
+TIME_ZONE = '-0600'
+
+def main():
+    args = parseArguments()
+
+    title = args.title
+
+    if args.name:
+        dash_title = dashTitle(args.name)
+    else:
+        dash_title = dashTitle(title)
+    
+    if args.date:
+        date = args.date
+        datetimeYAML = "{} 12:00:00 {}".format(args.date, TIME_ZONE)
+    else:
+        date, time = todaysDateTime()
+        datetimeYAML = "{} {} {}".format(date, time, TIME_ZONE) 
+
+    filename = date + dash_title + '.' + DEFAULT_EXT
+
+    tags = tagString(args.tags)
+
+    if args.Dir: # abs or rel directory has been provided
+        filename = args.Dir + "/" + filename
+    elif not_in_posts(): # in jekyll directory, but not in posts directory
+        filename = "_posts/" + filename
+    else: # must be in posts directory or else exit
+        checkIfInPosts()
+        
+
+    checkFile(filename)
+
+    writeYAML(filename, title, datetimeYAML, tags)
+
+    # if write flag is on, open post file in vim
+    if args.write:
+        subprocess.call(['vim', filename])
+
+    # success message
+    print 'New Jekyll post "' + title + '" has been created -- ' + filename
+
+def checkIfInPosts():
+    cwd = getcwd()
+    if cwd[-6:-1] == "_posts":
+        pass
+    else:
+        print("Cannot find Jekyll setup.")
+        sys.exit()
+
+def tagString(tags):
+    taglist = tags.split(' ')
+    tags = ''
+    for tag in taglist:
+        tags = '{} -{}'.format(tags, tag)
+    print("Tags are {}".format(tags))
+    return tags
+    
+
+def writeYAML(filename, title, datetimeYAML, tags):
+    try:
+        f = open(filename)
+    except IOError:
+        print('Issue writing to Jekyll post file ' + filename)
+        sys.exit(1)
+    f.write('---\n')
+    f.write('layout:post\n')
+    f.write('title: \n'.format(title))
+    f.write('time: {}'.format(datetimeYAML))
+    f.write('summary: \n')
+    f.write('status: draft\n')
+    f.write('tags: {}\n'.format(tags))
+    f.write('---\n\n')
+    print("YAML written.")
+
+
+    
+def checkFile(filename):
+    if path.exists(filename):
+        print(filename + ' already exists.')
+        print("Jekyll post not created.")
+        sys.exit(1)
+
+def not_in_posts():
+    cwdContents = listdir("path")
+    return "_posts" in cwdContents
+
+def parseArguments():
+    # parse the arguments
+    parser = ArgumentParser(description='Create a new Jekyll post.')
+    parser.add_argument('title', help='the title of the post wrapped in quotes.')
+    parser.add_argument('-D', '--Dir', help='specify the directory (relative or
+                        absolute) that the file should be written to.')
+    parser.add_argument('-d', '--date', help='specify the post date in the
+                        format YYYY-MM-DD, otherwise today is the default
+                        date.')
+    parser.add_argument('-n', '--name', help='specify the name of the post file
+                        instead of the automatically generated one. It is a best
+                        practice for the words to be separated by hyphens. Also
+                        note that the given name will be prepended with the date
+                        so as to conform to Jekyll naming requirements.')
+    parser.add_argument('-t', '--tags', help='specify a set of tags for the post
+                        separated by spaces with the entire set wrapped in
+                        quotes (e.g. "tag1 tag2 tag3").', default='')
+    parser.add_argument('-w', '--write', action="store_true", help='signals if
+                        this file should be opened for writing after creation')
+    return parser.parse_args()
+
+def dashTitle(title):
+    # exchange spaces for dashes and only include alphanumerics otherwise, make
+    # lowercase
+    dash_title = ''
+    for char in title:
+        char.lower()
+        if char == ' ':
+            dash_title += '-'
+        elif char.isalnum():
+            dash_title += char
+
+def todaysDateTime():
+    # use today's date
+    today = datetime.datetime.now()
+    
+    year = "{4i}".format(today.year)
+    month = "{2i}".format(today.month)
+    day = "{2i}".format(today.day)
+    
+    hour = "{2i}".format(today.hour)
+    minute = "{2i}".format(today.minute)
+    second = "{2i}".format(today.second)
+
+    date = "-".join([year,month,day])
+    time = ":".join([hour,minute,second])
+
+    return date, time 
+
+if __name__ == '__main__':
+    main()
